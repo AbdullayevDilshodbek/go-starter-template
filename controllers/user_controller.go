@@ -5,47 +5,49 @@ import (
 	"crud/config"
 	"crud/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jmoiron/sqlx"
 )
 
-func GetUsers() []models.User {
-	users := []models.User{}
-	rows, err := config.DB().Query("select id, username, created_at from users")
+type UserController struct {
+	db *sqlx.DB
+}
+
+func NewUserController() *UserController {
+	db := config.DB()
+	return &UserController{db: db}
+}
+
+func (c *UserController) GetUsers(w http.ResponseWriter) {
+	var users []models.User
+	err := c.db.Select(&users, "SELECT id, username, created_at FROM users")
 	if err != nil {
-		panic("Database connection error")
+		panic(err.Error())
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var user models.User
-		err = rows.Scan(&user.Id, &user.Username, &user.CreatedAt)
-		if err != nil {
-			panic(err.Error())
-		}
-		users = append(users, user)
-	}
-	return users
+	json.NewEncoder(w).Encode(users)
 }
 
-func GetUser(id int) models.User {
-	users := []models.User{}
-	for i := 0; i < 5; i++ {
-		users = append(users, models.User{
-			Id:       i + 1,
-			Username: "don",
-			Password: "123",
+func (c *UserController) GetUser(id int, w http.ResponseWriter) {
+	var user models.User
+	err := c.db.Get(&user, `SELECT id, username, created_at FROM users where id = ?`, id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "User not found",
+			"message": fmt.Sprintf("No user found with ID %d", id),
 		})
+		return
 	}
-
-	return users[id]
+	json.NewEncoder(w).Encode(user)
 }
 
-func CreateUser(userDTO *DTOs.CreateUserDTO, w http.ResponseWriter) {
+func (c *UserController) CreateUser(userDTO DTOs.CreateUserDTO, w http.ResponseWriter) {
 
 	validate := validator.New()
-
 	err := validate.Struct(userDTO)
 	if err != nil {
 		// Validation failed, handle the error
@@ -58,18 +60,18 @@ func CreateUser(userDTO *DTOs.CreateUserDTO, w http.ResponseWriter) {
 		}
 
 		// Send the JSON response with validation errors
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":  "Validation failed",
 			"fields": errorResponse,
 		})
-		return
+	} else {
+		query := `INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)`
+		_, err := c.db.Exec(query, userDTO.Username, userDTO.Password, time.Now())
+		if err != nil {
+			panic(err.Error())
+		}
+		json.NewEncoder(w).Encode(userDTO)
 	}
 
-	query := `INSERT INTO users (username, password, created_at) VALUES (?,?,?)`
-	_, err2 := config.DB().Exec(query, userDTO.Username, userDTO.Password, time.Now())
-	if err2 != nil {
-		panic(err2.Error())
-	}
 }

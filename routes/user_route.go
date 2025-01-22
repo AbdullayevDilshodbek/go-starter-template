@@ -11,23 +11,22 @@ import (
 )
 
 func UserRoutes(r *mux.Router) {
+
+	newUserController := controllers.NewUserController()
+
 	r.HandleFunc("/user/index", func(w http.ResponseWriter, r *http.Request) {
-		users := controllers.GetUsers()
-		json.NewEncoder(w).Encode(users)
+		newUserController.GetUsers(w)
 	}).Methods("GET")
 
 	r.HandleFunc("/user/{id}", func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)
 		id, _ := strconv.Atoi(params["id"])
-		user := controllers.GetUser(id)
-		json.NewEncoder(w).Encode(user)
+		newUserController.GetUser(id, w)
 	}).Methods("GET")
 
 	r.HandleFunc("/user/create", func(w http.ResponseWriter, r *http.Request) {
 		var userDTO DTOs.CreateUserDTO
 		_ = json.NewDecoder(r.Body).Decode(&userDTO)
-		controllers.CreateUser(&userDTO, w)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(userDTO)
+		newUserController.CreateUser(userDTO, w)
 	}).Methods("POST")
 }
