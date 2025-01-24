@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"crud/DTOs"
+	"crud/config"
 	"crud/models"
 	"encoding/json"
 	"fmt"
@@ -16,7 +17,8 @@ type UserController struct {
 	db *sqlx.DB
 }
 
-func NewUserController(db *sqlx.DB) *UserController {
+func NewUserController() *UserController {
+	db := config.DB()
 	return &UserController{db: db}
 }
 

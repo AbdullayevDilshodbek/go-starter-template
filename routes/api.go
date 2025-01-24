@@ -1,10 +1,7 @@
 package routes
 
-import (
-	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
-)
+import "github.com/gorilla/mux"
 
-func Routes(r *mux.Router, db *sqlx.DB) {
-	UserRoutes(r, db)
+func Routes(r *mux.Router) {
+	UserRoutes(r)
 }
