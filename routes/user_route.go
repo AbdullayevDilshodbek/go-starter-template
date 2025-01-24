@@ -8,11 +8,12 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 )
 
-func UserRoutes(r *mux.Router) {
+func UserRoutes(r *mux.Router, db *sqlx.DB) {
 
-	newUserController := controllers.NewUserController()
+	newUserController := controllers.NewUserController(db)
 
 	r.HandleFunc("/user/index", func(w http.ResponseWriter, r *http.Request) {
 		newUserController.GetUsers(w)
