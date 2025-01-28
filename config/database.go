@@ -15,7 +15,7 @@ func GetDB() *sqlx.DB {
 	// Database connection string
 	// dcn := "root:123@(localhost:3306)/golang"
 	dcn := fmt.Sprintf("%v:%v@(%v:%v)/%v", os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
-	fmt.Println(dcn)
+
 	// Initialize a mysql database connection
 	db, err := sqlx.Connect("mysql", dcn)
 	if err != nil {

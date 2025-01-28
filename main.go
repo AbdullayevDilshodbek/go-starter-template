@@ -4,6 +4,7 @@ import (
 	"crud/routes"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -14,7 +15,7 @@ func main() {
     routes.Routes(r)
 	r.Use(JsonMiddleware)
 
-    http.ListenAndServe(":3000", r)
+    http.ListenAndServe(":" + os.Getenv("SERVER_PORT"), r)
 }
 
 func JsonMiddleware(next http.Handler) http.Handler {
