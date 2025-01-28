@@ -6,34 +6,42 @@ import (
 	"crud/models"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jmoiron/sqlx"
 )
 
-type UserController struct {
-	db *sqlx.DB
-}
+type UserController struct{}
 
 func NewUserController() *UserController {
-	db := config.DB()
-	return &UserController{db: db}
+	return &UserController{}
 }
 
 func (c *UserController) GetUsers(w http.ResponseWriter) {
-	var users []models.User
-	err := c.db.Select(&users, "SELECT id, username, created_at FROM users")
-	if err != nil {
-		panic(err.Error())
+	db := config.GetDB()
+	if db == nil {
+		log.Println("Database connection is nil")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
+
+	var users []models.User
+	err := db.Select(&users, "SELECT id, username, created_at FROM users")
+	if err != nil {
+		log.Printf("Error fetching users: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
 	json.NewEncoder(w).Encode(users)
 }
 
 func (c *UserController) GetUser(id int, w http.ResponseWriter) {
 	var user models.User
-	err := c.db.Get(&user, `SELECT id, username, created_at FROM users where id = ?`, id)
+	db := config.GetDB()
+	err := db.Get(&user, `SELECT id, username, created_at FROM users where id = ?`, id)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{
@@ -42,6 +50,7 @@ func (c *UserController) GetUser(id int, w http.ResponseWriter) {
 		})
 		return
 	}
+	defer db.Close()
 	json.NewEncoder(w).Encode(user)
 }
 
@@ -66,11 +75,14 @@ func (c *UserController) CreateUser(userDTO DTOs.CreateUserDTO, w http.ResponseW
 			"fields": errorResponse,
 		})
 	} else {
+		db := config.GetDB()
 		query := `INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)`
-		_, err := c.db.Exec(query, userDTO.Username, userDTO.Password, time.Now())
+		_, err := db.Exec(query, userDTO.Username, userDTO.Password, time.Now())
 		if err != nil {
-			panic(err.Error())
+			log.Printf("Error creating user: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
+		defer db.Close()
 		json.NewEncoder(w).Encode(userDTO)
 	}
 
