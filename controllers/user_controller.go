@@ -4,13 +4,16 @@ import (
 	"crud/DTOs"
 	"crud/config"
 	"crud/models"
+	"crud/utils"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type UserController struct{}
@@ -86,4 +89,49 @@ func (c *UserController) CreateUser(userDTO DTOs.CreateUserDTO, w http.ResponseW
 		json.NewEncoder(w).Encode(userDTO)
 	}
 
+}
+
+func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	token, err := c.authenticate(req.Username, req.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+
+func (r *UserController) findByUsername(username string) (*models.User, error) {
+	var user models.User
+	db := config.GetDB()
+	err := db.Get(&user, "SELECT * FROM users WHERE username = ?", username)
+	defer db.Close()
+	return &user, err
+}
+
+func (c *UserController) authenticate(username, password string) (string, error) {
+	user, err := c.findByUsername(username)
+	if err != nil {
+		return "", errors.New("invalid credentials")
+	}
+
+	if !utils.CheckPasswordHash(password, user.Password) {
+		return "", errors.New("invalid credentials")
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.Id,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	return token.SignedString([]byte("secret_key"))
 }

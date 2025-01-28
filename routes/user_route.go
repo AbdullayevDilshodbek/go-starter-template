@@ -14,6 +14,10 @@ func UserRoutes(r *mux.Router) {
 
 	newUserController := controllers.NewUserController()
 
+	r.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		newUserController.Login(w, r)
+	}).Methods("POST")
+
 	r.HandleFunc("/user/index", func(w http.ResponseWriter, r *http.Request) {
 		newUserController.GetUsers(w)
 	}).Methods("GET")
