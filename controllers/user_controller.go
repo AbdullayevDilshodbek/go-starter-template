@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -132,6 +133,6 @@ func (c *UserController) authenticate(username, password string) (string, error)
 		"user_id": user.Id,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	})
-
-	return token.SignedString([]byte("secret_key"))
+	secret := os.Getenv("JWT_SECRET")
+	return token.SignedString([]byte(secret))
 }
