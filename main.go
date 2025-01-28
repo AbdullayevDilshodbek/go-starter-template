@@ -2,11 +2,14 @@ package main
 
 import (
 	"crud/routes"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 func main() {
+    LoadEnv()
     r := mux.NewRouter()
     routes.Routes(r)
 	r.Use(JsonMiddleware)
@@ -19,4 +22,12 @@ func JsonMiddleware(next http.Handler) http.Handler {
         w.Header().Set("Content-Type", "application/json")
         next.ServeHTTP(w, r) // Call the next handler in the chain
     })
+}
+
+func LoadEnv() {
+    err := godotenv.Load()
+
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 }
