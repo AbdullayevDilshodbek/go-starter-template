@@ -8,7 +8,7 @@ import (
 )
 
 func Routes(r *mux.Router) {
-	r = r.PathPrefix("/api").Subrouter()
+	r = r.PathPrefix("/api/v1").Subrouter()
 
 	r.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		newUserController := controllers.NewUserController()
