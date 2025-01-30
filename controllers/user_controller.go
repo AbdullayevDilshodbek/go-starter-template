@@ -99,12 +99,20 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.ErrorResponse{
+			Message: "Invalid request",
+			Status: http.StatusBadRequest,
+			Errors: err.Error(),
+		})
 		return
 	}
 	token, err := c.authenticate(req.Username, req.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.ErrorResponse{
+			Message: "Invalid credentials",
+			Status: http.StatusUnauthorized,
+			Errors: err.Error(),
+		})
 		return
 	}
 
